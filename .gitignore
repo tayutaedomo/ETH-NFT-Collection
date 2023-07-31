@@ -5,3 +5,13 @@
 
 # misc
 **/.DS_Store
+
+#Hardhat files
+cache
+artifacts
+
+.env
+coverage
+coverage.json
+typechain
+typechain-types
