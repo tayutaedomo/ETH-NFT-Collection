@@ -8,9 +8,7 @@ async function main() {
 
   const txn = await nftContract.makeAnEpicNFT();
   await txn.wait();
-
-  const txn2 = await nftContract.makeAnEpicNFT();
-  await txn2.wait();
+  console.log("Minted NFT #1");
 }
 
 main().catch((error) => {
