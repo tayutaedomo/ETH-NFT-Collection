@@ -5,13 +5,16 @@ pragma solidity ^0.8.18;
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "hardhat/console.sol";
 
 import { Base64 } from "./libraries/Base64.sol";
 
-contract MyEpicNFT is ERC721URIStorage {
+contract MyEpicNFT is ERC721URIStorage, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
+
+    uint256 private MAX_NFT_SUPPLY = 50;  // MAX_NFT_SUPPLY was originally a constant, but was made changeable for flexibility.
 
     string baseSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
     string[] firstWords = ["Shoot", "Task", "Couple", "Senior", "Attack", "Bed", "Assume", "News", "Drive", "Quality"];
@@ -22,6 +25,18 @@ contract MyEpicNFT is ERC721URIStorage {
 
     constructor() ERC721("SquareNFT", "SQUARE") {
         console.log("This is my NFT contract.");
+    }
+
+    function totalSupply() public view returns (uint256) {
+        return _tokenIds.current();
+    }
+
+    function maxSupply() public view returns (uint256) {
+        return MAX_NFT_SUPPLY;
+    }
+
+    function setMaxSupply(uint256 value) public onlyOwner {
+        MAX_NFT_SUPPLY = value;
     }
 
     function random(string memory input) internal pure returns (uint256) {
@@ -51,6 +66,8 @@ contract MyEpicNFT is ERC721URIStorage {
     }
 
     function makeAnEpicNFT() public {
+        require(totalSupply() < maxSupply(), "Maximum NFT supply reached.");
+
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
 
@@ -60,9 +77,9 @@ contract MyEpicNFT is ERC721URIStorage {
         string memory combinedWord = string(abi.encodePacked(first, second, third));
         string memory finalSvg = string(abi.encodePacked(baseSvg, combinedWord, "</text></svg>"));
 
-        console.log("\n----- SVG data ------");
-        console.log(finalSvg);
-        console.log("--------------------\n");
+        // console.log("\n----- SVG data ------");
+        // console.log(finalSvg);
+        // console.log("--------------------\n");
 
         string memory json = Base64.encode(
             bytes(
@@ -79,9 +96,9 @@ contract MyEpicNFT is ERC721URIStorage {
         );
         string memory finalTokenUri = string(abi.encodePacked("data:application/json;base64,", json));
 
-        console.log("\n----- Token URI ----");
-        console.log(finalTokenUri);
-        console.log("--------------------\n");
+        // console.log("\n----- Token URI ----");
+        // console.log(finalTokenUri);
+        // console.log("--------------------\n");
 
         _safeMint(msg.sender, newItemId);
         _setTokenURI(newItemId, finalTokenUri);

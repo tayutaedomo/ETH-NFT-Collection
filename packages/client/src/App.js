@@ -8,11 +8,12 @@ import myEpicNft from "./utils/MyEpicNFT.json";
 const TWITTER_HANDLE = process.env.REACT_APP_TWITTER_HANDLE;
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const CONTRACT_ADDRESS = process.env.REACT_APP_MY_EPIC_NFT_ADDRESS;
-const OPENSEA_LINK = "";
-const TOTAL_MINT_COUNT = 50;
+// const OPENSEA_LINK = "";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
+  const [currentMintCount, setCurrentMintCount] = useState(0);
+  const [maxMintCount, setMaxMintCount] = useState(0);
 
   const setEventListener = async () => {
     try {
@@ -124,8 +125,31 @@ const App = () => {
     </button>
   );
 
+  const fetchMintCounts = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum) {
+        const provider = new ethers.providers.Web3Provider(ethereum);
+        const connectedContract = new ethers.Contract(
+          CONTRACT_ADDRESS,
+          myEpicNft.abi,
+          provider
+        );
+        const mintCount = await connectedContract.totalSupply();
+        const maxCount = await connectedContract.maxSupply();
+        setCurrentMintCount(mintCount.toNumber());
+        setMaxMintCount(maxCount.toNumber());
+      } else {
+        console.log("Ethereum object doesn't exist!");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   useEffect(() => {
     checkIfWalletIsConnected();
+    fetchMintCounts();
   }, []);
 
   return (
@@ -137,6 +161,9 @@ const App = () => {
           {currentAccount === ""
             ? renderNotConnectedContainer()
             : renderMintUI()}
+          <p className="sub-text">
+            これまでに作成された {currentMintCount} / {maxMintCount} NFT
+          </p>
         </div>
         <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
