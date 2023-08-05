@@ -9,7 +9,6 @@ import myEpicNft from "./utils/MyEpicNFT.json";
 const TWITTER_HANDLE = process.env.REACT_APP_TWITTER_HANDLE;
 const TWITTER_LINK = `https://twitter.com/${TWITTER_HANDLE}`;
 const CONTRACT_ADDRESS = process.env.REACT_APP_MY_EPIC_NFT_ADDRESS;
-// const OPENSEA_LINK = "";
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
@@ -146,7 +145,7 @@ const App = () => {
   const renderMintUI = () => (
     <button
       onClick={askContractToMintNft}
-      className="cta-button connect-wallet-button"
+      className="cta-button mint-button"
       disabled={isMinting}
     >
       {isMinting ? "Loading..." : "Mint NFT"}
@@ -166,7 +165,19 @@ const App = () => {
           <p className="sub-text">
             あなただけの特別な NFT を Mint しよう💫
             <br />
-            これまでに作成された {currentMintCount} / {maxMintCount} NFT
+            <span className="mint-count">
+              これまでに作成された {currentMintCount} / {maxMintCount} NFT
+            </span>
+            <br />
+            <a
+              href={`https://gemcase.vercel.app/view/evm/sepolia/${CONTRACT_ADDRESS}`}
+              target="_blank"
+              rel="noreferrer"
+            >
+              <button className="cta-button opensea-button">
+                gemcase で NFT を見る
+              </button>
+            </a>
           </p>
           {currentAccount === ""
             ? renderNotConnectedContainer()
