@@ -60,8 +60,25 @@ const App = () => {
       console.log("Found an authorized account:", account);
       setCurrentAccount(account);
       setEventListener();
+
+      checkAndAlertIfWrongNetwork();
     } else {
       console.log("No authorized account found");
+    }
+  };
+
+  const checkAndAlertIfWrongNetwork = async () => {
+    try {
+      const { ethereum } = window;
+      if (ethereum) {
+        const chainId = await ethereum.request({ method: "eth_chainId" });
+        const sepoliaChainId = "0xaa36a7";
+        if (chainId !== sepoliaChainId) {
+          alert("You are not connected to the Sepolia Test Network!");
+        }
+      }
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -79,6 +96,8 @@ const App = () => {
       console.log("Connected", accounts[0]);
       setCurrentAccount(accounts[0]);
       setEventListener();
+
+      checkAndAlertIfWrongNetwork();
     } catch (error) {
       console.log(error);
     }
@@ -138,13 +157,14 @@ const App = () => {
       <div className="container">
         <div className="header-container">
           <p className="header gradient-text">My NFT Collection</p>
-          <p className="sub-text">あなただけの特別な NFT を Mint しよう💫</p>
+          <p className="sub-text">
+            あなただけの特別な NFT を Mint しよう💫
+            <br />
+            これまでに作成された {currentMintCount} / {maxMintCount} NFT
+          </p>
           {currentAccount === ""
             ? renderNotConnectedContainer()
             : renderMintUI()}
-          <p className="sub-text">
-            これまでに作成された {currentMintCount} / {maxMintCount} NFT
-          </p>
         </div>
         <div className="footer-container">
           <img alt="Twitter Logo" className="twitter-logo" src={twitterLogo} />
