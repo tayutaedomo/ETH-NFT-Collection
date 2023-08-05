@@ -1,5 +1,6 @@
 import { ethers } from "ethers";
 import React, { useEffect, useState } from "react";
+import useMintCounts from "./hooks/useMintCounts";
 
 import twitterLogo from "./assets/twitter-logo.svg";
 import "./styles/App.css";
@@ -12,8 +13,8 @@ const CONTRACT_ADDRESS = process.env.REACT_APP_MY_EPIC_NFT_ADDRESS;
 
 const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
-  const [currentMintCount, setCurrentMintCount] = useState(0);
-  const [maxMintCount, setMaxMintCount] = useState(0);
+  const { currentMintCount, maxMintCount, fetchAndUpdateMintCount } =
+    useMintCounts();
 
   const setEventListener = async () => {
     try {
@@ -28,6 +29,8 @@ const App = () => {
         );
 
         connectedContract.on("NewEpicNFTMinted", (from, tokenId) => {
+          fetchAndUpdateMintCount();
+
           const message = `あなたのウォレットに NFT を送信しました。gemcase に表示されるまで数分かかることがあります。NFT へのリンクはこちらです: https://gemcase.vercel.app/view/evm/sepolia/${CONTRACT_ADDRESS}/${tokenId.toNumber()}`;
           console.log(from, tokenId.toNumber(), message);
           alert(message);
@@ -125,31 +128,9 @@ const App = () => {
     </button>
   );
 
-  const fetchMintCounts = async () => {
-    try {
-      const { ethereum } = window;
-      if (ethereum) {
-        const provider = new ethers.providers.Web3Provider(ethereum);
-        const connectedContract = new ethers.Contract(
-          CONTRACT_ADDRESS,
-          myEpicNft.abi,
-          provider
-        );
-        const mintCount = await connectedContract.totalSupply();
-        const maxCount = await connectedContract.maxSupply();
-        setCurrentMintCount(mintCount.toNumber());
-        setMaxMintCount(maxCount.toNumber());
-      } else {
-        console.log("Ethereum object doesn't exist!");
-      }
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   useEffect(() => {
     checkIfWalletIsConnected();
-    fetchMintCounts();
+    fetchAndUpdateMintCount();
   }, []);
 
   return (
