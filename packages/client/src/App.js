@@ -15,6 +15,7 @@ const App = () => {
   const [currentAccount, setCurrentAccount] = useState("");
   const { currentMintCount, maxMintCount, fetchAndUpdateMintCount } =
     useMintCounts();
+  const [isMinting, setIsMinting] = useState(false);
 
   const setEventListener = async () => {
     try {
@@ -105,6 +106,8 @@ const App = () => {
 
   const askContractToMintNft = async () => {
     try {
+      setIsMinting(true);
+
       const { ethereum } = window;
       if (ethereum) {
         const provider = new ethers.providers.Web3Provider(ethereum);
@@ -119,6 +122,7 @@ const App = () => {
         const nftTxn = await connectedContract.makeAnEpicNFT();
         console.log("Mining...please wait.");
         await nftTxn.wait();
+        setIsMinting(false);
         console.log(
           `Mined, see transaction: https://sepolia.etherscan.io/tx/${nftTxn.hash}`
         );
@@ -126,6 +130,7 @@ const App = () => {
         console.log("Ethereum object doesn't exist!");
       }
     } catch (error) {
+      setIsMinting(false);
       console.log(error);
     }
   };
@@ -142,8 +147,9 @@ const App = () => {
     <button
       onClick={askContractToMintNft}
       className="cta-button connect-wallet-button"
+      disabled={isMinting}
     >
-      Mint NFT
+      {isMinting ? "Loading..." : "Mint NFT"}
     </button>
   );
 
