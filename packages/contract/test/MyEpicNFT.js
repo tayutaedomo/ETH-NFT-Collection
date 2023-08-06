@@ -77,6 +77,36 @@ describe("MyEpicNFT", function () {
     });
   });
 
+  describe("mintingFee", function () {
+    it("should return the minting fee", async function () {
+      const { MyEpicNFT } = await loadFixture(deployMyEpicNFTFixture);
+      expect(await MyEpicNFT.mintingFee()).to.equal(
+        ethers.utils.parseEther("0.00001")
+      );
+    });
+  });
+
+  describe("setMintingFee", function () {
+    it("should allow owner to set minting fee", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      await MyEpicNFT.connect(owner).setMintingFee(
+        ethers.utils.parseEther("0.0002")
+      );
+      expect(await MyEpicNFT.mintingFee()).to.equal(
+        ethers.utils.parseEther("0.0002")
+      );
+    });
+
+    it("should not allow non-owner to set minting fee", async function () {
+      const { MyEpicNFT, nonOwner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(
+        MyEpicNFT.connect(nonOwner).setMintingFee(
+          ethers.utils.parseEther("0.0002")
+        )
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+  });
+
   describe("pickRandomFirstWord", function () {
     it("should get strings in firstWords", async function () {
       const { MyEpicNFT, firstWords } = await loadFixture(
@@ -119,6 +149,63 @@ describe("MyEpicNFT", function () {
       await MyEpicNFT.makeAnEpicNFT();
       await expect(MyEpicNFT.makeAnEpicNFT()).to.be.revertedWith(
         "Maximum NFT supply reached."
+      );
+    });
+
+    it("should collect minting fee", async function () {
+      const { MyEpicNFT, owner, nonOwner } = await loadFixture(
+        deployMyEpicNFTFixture
+      );
+      const feeBefore = await ethers.provider.getBalance(MyEpicNFT.address);
+      await MyEpicNFT.connect(owner).makeAnEpicNFT();
+      await MyEpicNFT.connect(nonOwner).makeAnEpicNFT({
+        value: ethers.utils.parseEther("0.01"),
+      });
+      const feeAfter = await ethers.provider.getBalance(MyEpicNFT.address);
+      expect(feeAfter.sub(feeBefore)).to.equal(ethers.utils.parseEther("0.01"));
+    });
+
+    it("should revert if minting fee is not provided", async function () {
+      const { MyEpicNFT, nonOwner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(
+        MyEpicNFT.connect(nonOwner).makeAnEpicNFT()
+      ).to.be.revertedWith("Insufficient minting fee provided");
+    });
+  });
+
+  describe("withdraw", function () {
+    it("should allow owner to withdraw", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      await MyEpicNFT.makeAnEpicNFT({ value: ethers.utils.parseEther("0.01") });
+      const ownerBalanceBefore = await ethers.provider.getBalance(
+        owner.address
+      );
+      const contractBalanceBefore = await ethers.provider.getBalance(
+        MyEpicNFT.address
+      );
+
+      const tx = await MyEpicNFT.connect(owner).withdraw();
+      const receipt = await tx.wait();
+      const gasUsed = receipt.gasUsed;
+      const txDetails = await ethers.provider.getTransaction(tx.hash);
+      const gasPrice = txDetails.gasPrice;
+      const gasCost = gasUsed.mul(gasPrice);
+
+      const ownerBalanceAfter = await ethers.provider.getBalance(owner.address);
+      const contractBalanceAfter = await ethers.provider.getBalance(
+        MyEpicNFT.address
+      );
+
+      expect(ownerBalanceAfter.add(gasCost).sub(ownerBalanceBefore)).to.equal(
+        contractBalanceBefore
+      );
+      expect(contractBalanceAfter).to.equal(0);
+    });
+
+    it("should not allow non-owner to withdraw", async function () {
+      const { MyEpicNFT, nonOwner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(MyEpicNFT.connect(nonOwner).withdraw()).to.be.revertedWith(
+        "Ownable: caller is not the owner"
       );
     });
   });

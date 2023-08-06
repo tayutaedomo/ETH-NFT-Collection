@@ -15,6 +15,7 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
     Counters.Counter private _tokenIds;
 
     uint256 private MAX_NFT_SUPPLY = 50;  // MAX_NFT_SUPPLY was originally a constant, but was made changeable for flexibility.
+    uint256 public mintingFee = 10**13;  // 0.00001 ether
 
     string baseSvg = "<svg xmlns='http://www.w3.org/2000/svg' preserveAspectRatio='xMinYMin meet' viewBox='0 0 350 350'><style>.base { fill: white; font-family: serif; font-size: 24px; }</style><rect width='100%' height='100%' fill='black' /><text x='50%' y='50%' class='base' dominant-baseline='middle' text-anchor='middle'>";
     string[] firstWords = ["Shoot", "Task", "Couple", "Senior", "Attack", "Bed", "Assume", "News", "Drive", "Quality"];
@@ -23,9 +24,7 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
 
     event NewEpicNFTMinted(address sender, uint256 tokenId);
 
-    constructor() ERC721("SquareNFT", "SQUARE") {
-        console.log("This is my NFT contract.");
-    }
+    constructor() ERC721("SquareNFT", "SQUARE") {}
 
     function totalSupply() public view returns (uint256) {
         return _tokenIds.current();
@@ -39,17 +38,21 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
         MAX_NFT_SUPPLY = value;
     }
 
+    function setMintingFee(uint256 newFee) public onlyOwner {
+        mintingFee = newFee;
+    }
+
+    function withdraw() public onlyOwner {
+        payable(owner()).transfer(address(this).balance);
+    }
+
     function random(string memory input) internal pure returns (uint256) {
         return uint256(keccak256(abi.encodePacked(input)));
     }
 
     function pickRandomFirstWord(uint256 tokenId) public view returns (string memory) {
         uint256 rand = random(string(abi.encodePacked("FIRST_WORD", Strings.toString(tokenId))));
-        console.log("rand seed: ", rand);
-
         rand = rand % firstWords.length;
-
-        console.log("rand first word: ", rand);
         return firstWords[rand];
     }
 
@@ -65,8 +68,12 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
         return thirdWords[rand];
     }
 
-    function makeAnEpicNFT() public {
+    function makeAnEpicNFT() public payable {
         require(totalSupply() < maxSupply(), "Maximum NFT supply reached.");
+
+        if (msg.sender != owner()) {
+            require(msg.value >= mintingFee, "Insufficient minting fee provided");
+        }
 
         _tokenIds.increment();
         uint256 newItemId = _tokenIds.current();
@@ -76,10 +83,6 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
         string memory third = pickRandomThirdWord(newItemId);
         string memory combinedWord = string(abi.encodePacked(first, second, third));
         string memory finalSvg = string(abi.encodePacked(baseSvg, combinedWord, "</text></svg>"));
-
-        // console.log("\n----- SVG data ------");
-        // console.log(finalSvg);
-        // console.log("--------------------\n");
 
         string memory json = Base64.encode(
             bytes(
@@ -96,13 +99,8 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
         );
         string memory finalTokenUri = string(abi.encodePacked("data:application/json;base64,", json));
 
-        // console.log("\n----- Token URI ----");
-        // console.log(finalTokenUri);
-        // console.log("--------------------\n");
-
         _safeMint(msg.sender, newItemId);
         _setTokenURI(newItemId, finalTokenUri);
-        console.log("An NFT w/ ID %s has been minted to %s", newItemId, msg.sender);
 
         emit NewEpicNFTMinted(msg.sender, newItemId);
     }
