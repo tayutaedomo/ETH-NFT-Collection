@@ -6,11 +6,12 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "hardhat/console.sol";
+import "./interfaces/IERC2981.sol";
+// import "hardhat/console.sol";
 
 import { Base64 } from "./libraries/Base64.sol";
 
-contract MyEpicNFT is ERC721URIStorage, Ownable {
+contract MyEpicNFT is ERC721URIStorage, IERC2981, Ownable {
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIds;
 
@@ -22,9 +23,14 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
     string[] secondWords = ["Behind", "Body", "Front", "Year", "Three", "Everything", "Head", "Middle", "Happy", "Everything"];
     string[] thirdWords = ["Push", "Break", "Ten", "Begin", "Until", "Even", "Board", "Order", "Lead", "Moment"];
 
+    address public royaltyReceiver;
+    uint256 public royaltyPercentage = 10;  // 10%
+
     event NewEpicNFTMinted(address sender, uint256 tokenId);
 
-    constructor() ERC721("SquareNFT", "SQUARE") {}
+    constructor() ERC721("SquareNFT", "SQUARE") {
+        royaltyReceiver = payable(owner());
+    }
 
     function totalSupply() public view returns (uint256) {
         return _tokenIds.current();
@@ -103,5 +109,23 @@ contract MyEpicNFT is ERC721URIStorage, Ownable {
         _setTokenURI(newItemId, finalTokenUri);
 
         emit NewEpicNFTMinted(msg.sender, newItemId);
+    }
+
+    function setRoyaltyReceiver(address payable _newReceiver) external onlyOwner {
+        require(_newReceiver != address(0), "Invalid address");
+        royaltyReceiver = _newReceiver;
+    }
+
+    function setRoyaltyPercentage(uint256 newRoyaltyPercentage) public onlyOwner {
+        royaltyPercentage = newRoyaltyPercentage;
+    }
+
+    function royaltyInfo(uint256 tokenId, uint256 salePrice)
+        external
+        view
+        override
+        returns (address receiver, uint256 royaltyAmount)
+    {
+        return (royaltyReceiver, salePrice * royaltyPercentage / 100);
     }
 }

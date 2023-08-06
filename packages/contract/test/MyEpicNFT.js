@@ -209,4 +209,66 @@ describe("MyEpicNFT", function () {
       );
     });
   });
+
+  describe("royaltyReceiver", function () {
+    it("should set the correct initial royaltyReceiver", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      expect(await MyEpicNFT.royaltyReceiver()).to.equal(owner.address);
+    });
+  });
+
+  describe("setRoyaltyReceiver", function () {
+    it("should allow owner to set royaltyReceiver", async function () {
+      const { MyEpicNFT, owner, nonOwner } = await loadFixture(
+        deployMyEpicNFTFixture
+      );
+      await MyEpicNFT.connect(owner).setRoyaltyReceiver(nonOwner.address);
+      expect(await MyEpicNFT.royaltyReceiver()).to.equal(nonOwner.address);
+    });
+
+    it("should not allow non-owner to set royaltyReceiver", async function () {
+      const { MyEpicNFT, nonOwner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(
+        MyEpicNFT.connect(nonOwner).setRoyaltyReceiver(nonOwner.address)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+
+    it("should revert if setting invalid address as royaltyReceiver", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(
+        MyEpicNFT.connect(owner).setRoyaltyReceiver(
+          ethers.constants.AddressZero
+        )
+      ).to.be.revertedWith("Invalid address");
+    });
+  });
+
+  describe("setRoyaltyPercentage", function () {
+    it("should allow owner to set royaltyPercentage", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      const newPercentage = 5;
+      await MyEpicNFT.connect(owner).setRoyaltyPercentage(newPercentage);
+      expect(await MyEpicNFT.royaltyPercentage()).to.equal(newPercentage);
+    });
+
+    it("should not allow non-owner to set royaltyPercentage", async function () {
+      const { MyEpicNFT, nonOwner } = await loadFixture(deployMyEpicNFTFixture);
+      await expect(
+        MyEpicNFT.connect(nonOwner).setRoyaltyPercentage(5)
+      ).to.be.revertedWith("Ownable: caller is not the owner");
+    });
+  });
+
+  describe("royaltyInfo", function () {
+    it("should return the correct royalty information", async function () {
+      const { MyEpicNFT, owner } = await loadFixture(deployMyEpicNFTFixture);
+      await MyEpicNFT.makeAnEpicNFT({ value: ethers.utils.parseEther("0.01") });
+      const [receiver, amount] = await MyEpicNFT.royaltyInfo(
+        1,
+        ethers.utils.parseEther("1")
+      );
+      expect(receiver).to.equal(owner.address);
+      expect(amount).to.equal(ethers.utils.parseEther("0.1"));
+    });
+  });
 });
