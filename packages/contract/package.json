@@ -20,6 +20,7 @@
   "scripts": {
     "deploy": "npx hardhat run scripts/deploy.js",
     "deploy:sepolia": "npx hardhat run scripts/deploy.js --network sepolia",
+    "verify": "npx hardhat clean && npx hardhat verify --network sepolia $REACT_APP_MY_EPIC_NFT_ADDRESS",
     "test": "npx hardhat test"
   }
 }
